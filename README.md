@@ -5,11 +5,10 @@
 find a Debian or Ubuntu box with root on a clean public IP and run:
 
     apt-get update\
-	  && apt-get -y install vim dnsutils curl sudo\
+	  && apt-get -y install vim dnsutils curl sudo git\
 	  && curl -fsSL https://get.docker.com/ | sh || apt-get -y install docker.io\
-	  && mkdir -p ~/netflix-proxy\
-	  && cd ~/netflix-proxy\
-	  && curl -fsSL https://github.com/ab77/netflix-proxy/archive/latest.tar.gz | gunzip - | tar x --strip-components=1\
+	  && git clone https://github.com/listill/netflix-proxy.git /root/netflix-proxy\
+    && cd netflix-proxy\
 	  && ./build.sh
 
 See the [**Wiki**](https://github.com/ab77/netflix-proxy/wiki) page(s) for some common troubleshooting ideas.
