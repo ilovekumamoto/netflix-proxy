@@ -19,17 +19,7 @@ usage() {
     exit 1;
 }
 
-# fix terminfo
-# http://ashberlin.co.uk/blog/2010/08/24/color-in-ubuntu-init-scripts/
-if [[ $(infocmp | grep 'hpa=') == "" ]]; then
-  (infocmp; printf '\thpa=\\E[%sG,\n' %i%p1%d) > tmp-${$}.tic\
-    && tic -s tmp-$$.tic -o /etc/terminfo\
-    && rm tmp-$$.tic\
-    && exec $0 $*
-fi
-
 # process options
-printf "$0: $*\n"
 while getopts "b:c:" o; do
     case "${o}" in
         b)
@@ -48,6 +38,15 @@ shift $((OPTIND-1))
 
 if [ ${b} ]; then DOCKER_BUILD=${b}; fi
 if [ ${c} ]; then CLIENTIP=${c}; fi
+
+# fix terminfo
+# http://ashberlin.co.uk/blog/2010/08/24/color-in-ubuntu-init-scripts/
+if [[ $(infocmp | grep 'hpa=') == "" ]]; then
+  (infocmp; printf '\thpa=\\E[%sG,\n' %i%p1%d) > tmp-${$}.tic && \
+    tic -s tmp-$$.tic -o /etc/terminfo && \
+    rm tmp-$$.tic && \
+    exec ${0} $@
+fi
 
 log_action_begin_msg "checking OS compatibility"
 if [[ $(cat /etc/os-release | grep '^ID=') =~ ubuntu ]]\
@@ -135,7 +134,6 @@ if [[ "${IPV6}" == '1' ]]; then
 fi
 
 sudo touch ${CWD}/netflix-proxy.log
-
 log_action_begin_msg "log diagnostics info"
 printf "build=${DOCKER_BUILD} client=${CLIENTIP} local=${IPADDR} public=${EXTIP}\n"
 printf "${debug}\n" &>> ${CWD}/netflix-proxy.log
@@ -289,17 +287,19 @@ if [[ "${IPV6}" == '1' ]] && [[ -n "${EXTIP6}" ]]; then
 fi
 log_action_end_msg $?
 
-log_action_begin_msg "installing Python3 and requirements"
+log_action_begin_msg "installing python-pip and docker-compose"
 sudo apt-get -y update &>> ${CWD}/netflix-proxy.log\
-  && sudo apt-get -y install python3.6 python3-venv python3-pip sqlite3 &>> ${CWD}/netflix-proxy.log\
-  && python3 -m venv venv &>> ${CWD}/netflix-proxy.log\
+  && sudo apt-get -y install python-pip sqlite3 &>> ${CWD}/netflix-proxy.log\
+  && pip install --upgrade pip setuptools &>> ${CWD}/netflix-proxy.log\
+  && $(which pip) install virtualenv &>> ${CWD}/netflix-proxy.log\
+  && $(which virtualenv) venv &>> ${CWD}/netflix-proxy.log\
   && source venv/bin/activate &>> ${CWD}/netflix-proxy.log\
-  && pip3 install -r requirements.txt &>> ${CWD}/netflix-proxy.log\
-  && pip3 install -r ${CWD}/auth/requirements.txt &>> ${CWD}/netflix-proxy.log
+  && $(which pip) install docker-compose &>> ${CWD}/netflix-proxy.log
 log_action_end_msg $?
 
 log_action_begin_msg "configuring admin backend"
-PLAINTEXT=$(${CWD}/auth/pbkdf2_sha256_hash.py | awk '{print $1}')\
+sudo $(which pip) install -r ${CWD}/auth/requirements.txt &>> ${CWD}/netflix-proxy.log\
+  && PLAINTEXT=$(${CWD}/auth/pbkdf2_sha256_hash.py | awk '{print $1}')\
   && HASH=$(${CWD}/auth/pbkdf2_sha256_hash.py ${PLAINTEXT} | awk '{print $2}')\
   && sudo cp ${CWD}/auth/db/auth.default.db ${CWD}/auth/db/auth.db &>> ${CWD}/netflix-proxy.log\
   && sudo $(which sqlite3) ${CWD}/auth/db/auth.db "UPDATE users SET password = '${HASH}' WHERE ID = 1;" &>> ${CWD}/netflix-proxy.log
