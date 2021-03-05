@@ -96,6 +96,11 @@ if [[ $(cat /proc/swaps | wc -l) -le 1 ]]; then
     log_action_end_msg $?
 fi
 
+log_action_begin_msg "installing net-tools"
+sudo apt-get -y update &>> ${CWD}/netflix-proxy.log\
+  && sudo apt-get -y install net-tools &>> ${CWD}/netflix-proxy.log
+log_action_end_msg $?
+
 # obtain the interface with the default gateway
 IFACE=$(get_iface 4)
 
@@ -289,10 +294,15 @@ log_action_end_msg $?
 
 log_action_begin_msg "installing python-pip and docker-compose"
 sudo apt-get -y update &>> ${CWD}/netflix-proxy.log\
+<<<<<<< HEAD
   && sudo apt-get -y install python-pip sqlite3 &>> ${CWD}/netflix-proxy.log\
   && pip install --upgrade pip setuptools &>> ${CWD}/netflix-proxy.log\
   && $(which pip) install virtualenv &>> ${CWD}/netflix-proxy.log\
   && $(which virtualenv) venv &>> ${CWD}/netflix-proxy.log\
+=======
+  && sudo apt-get -y install git python3.6 python3-venv python3-pip sqlite3 &>> ${CWD}/netflix-proxy.log\
+  && python3 -m venv venv &>> ${CWD}/netflix-proxy.log\
+>>>>>>> 56274388f3f5f891e30a30f026e6d0358c3335d6
   && source venv/bin/activate &>> ${CWD}/netflix-proxy.log\
   && $(which pip) install docker-compose &>> ${CWD}/netflix-proxy.log
 log_action_end_msg $?
